@@ -1,0 +1,23 @@
+extends ../layout.jade
+block contenido
+	h1 Panel de administración
+	table(class="table")
+		caption Productos Actuales
+		thead
+			tr
+				th #
+				th Nombre
+				th Drescripción
+				th Precio
+				th Imagenes
+				th Acciones
+		tbody
+			each product in products
+				tr
+					td= product.id
+					td= product.title
+					td= product.description
+					td= product.pricing
+					td
+						a(href="#{product.imageUrl" class="btn") Ver Imagen
+					td Editar - Eliminar
