@@ -5,6 +5,7 @@ var multer = require('multer');
 var cloudinary = require("cloudinary");
 var method_override = require("method-override");
 var app_password = "123456789";
+var Schema = mongoose.Schema;
 
 cloudinary.config({
  cloud_name: "df01eyg6w",
@@ -25,12 +26,22 @@ var middleware_upload = uploader.single('image_avatar');
 
 
 //Definir el schema de nuestros productos
-var productSchema = {
+var productSchemaJSON = {
 	title:String,
 	descripcion:String,
 	imageUrl:String,
 	pricing:Number
 };
+
+var productSchema = new Schema(productSchemaJSON);
+//Img por defecto cuando no se le pone imagen
+//Atributo
+productSchema.virtual("image.url").get(function(){
+	if(this.imageUrl === "" || this.imageUrl === "data.png"){
+		return "default.jpg";
+	}
+	return this.imageUrl;
+});
 
 var Product = mongoose.model("Product", productSchema);
 
@@ -64,15 +75,30 @@ app.get("/menu/edit/:id",function(req,res){
 });
 //Ruta para editar
 app.put("/menu/:id",middleware_upload,function(req,res){
+
 	if (req.body.password == app_password){
 		var data = {
 		title: req.body.title,
 		descripcion: req.body.descripcion,
 		pricing: req.body.pricing
 	};
-	Product.update({"_id": req.params.id},data,function(product){
+
+    if(req.file){
+
+	 	cloudinary.uploader.upload(req.file.path,
+	 		function(result){
+	 			data.imageUrl = result.url;
+				Product.update({"_id": req.params.id},data,function(product){
+				res.redirect("/menu");
+				});
+            });
+	 	
+    }else{
+    	Product.update({"_id": req.params.id},data,function(product){
 		res.redirect("/menu");
-	})
+	});
+    }
+
 	}else{
 		res.redirect("/");
 	} 
@@ -96,13 +122,12 @@ app.post("/admin",function(req,res){
 app.get("/admin",function(req,res){
 		res.render("admin/form")
 });
-
+//Ruta para actualizar producto
 app.post("/menu",middleware_upload,function(req,res){
 	if (req.body.password == app_password) {
 		var data = {
 		title: req.body.title,
 		descripcion: req.body.descripcion,
-		imageUrl: "data.png",
 		pricing: req.body.pricing
 	}
 
@@ -113,7 +138,7 @@ app.post("/menu",middleware_upload,function(req,res){
 	 			product.imageUrl = result.url;
 	 			product.save(function(err){
 	 			console.log(product);
-                res.render("index");
+                res.redirect("/menu");
             });
 	 	});
 	 }
@@ -121,6 +146,27 @@ app.post("/menu",middleware_upload,function(req,res){
 	}else{
 		res.render("menu/new");
 	} 
+});
+
+//Ruta para eliminar producto
+app.get("/menu/delete/:id",function(req,res){
+ 	var id = req.params.id;
+
+ 	Product.findOne({"_id": id},function(err,producto){
+ 		res.render("menu/delete",{ producto: producto });
+ 	});
+});
+
+app.delete("/menu/:id",function(req,res){
+	 	var id = req.params.id;
+	if (req.body.password == app_password){
+		Product.remove({"_id": id},function(err){
+			if (err) {console.log(err);}
+			res.redirect("/menu");
+		});
+	}else{
+		res.redirect("/menu");
+	}
 });
 
 app.get("/menu/new",function(req,res){
