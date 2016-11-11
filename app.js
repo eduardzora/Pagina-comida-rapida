@@ -3,6 +3,7 @@ var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var multer = require('multer');
 var cloudinary = require("cloudinary");
+var method_override = require("method-override");
 var app_password = "123456789";
 
 cloudinary.config({
@@ -18,11 +19,15 @@ mongoose.connect("mongodb://localhost/food_rapid"); //Conectar a la base de dato
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 var uploader = multer({dest: "./uploads"});
+app.use(method_override("_method")); //Sobreescribir el metodo post a put
 var middleware_upload = uploader.single('image_avatar');
+
+
+
 //Definir el schema de nuestros productos
 var productSchema = {
 	title:String,
-	description:String,
+	descripcion:String,
 	imageUrl:String,
 	pricing:Number
 };
@@ -48,6 +53,31 @@ app.get("/menu",function(req,res){
 	});
 });
 
+//Ruta para formulario editar
+app.get("/menu/edit/:id",function(req,res){
+	var id_product = req.params.id;
+
+	Product.findOne({"_id": id_product},function(error, producto){
+		console.log(producto);
+		res.render("menu/edit",{ product: producto });
+	});
+});
+//Ruta para editar
+app.put("/menu/:id",middleware_upload,function(req,res){
+	if (req.body.password == app_password){
+		var data = {
+		title: req.body.title,
+		descripcion: req.body.descripcion,
+		pricing: req.body.pricing
+	};
+	Product.update({"_id": req.params.id},data,function(product){
+		res.redirect("/menu");
+	})
+	}else{
+		res.redirect("/");
+	} 
+});
+
 //Post de admin
 app.post("/admin",function(req,res){
 	if (req.body.password == app_password){
@@ -71,7 +101,7 @@ app.post("/menu",middleware_upload,function(req,res){
 	if (req.body.password == app_password) {
 		var data = {
 		title: req.body.title,
-		description: req.body.description,
+		descripcion: req.body.descripcion,
 		imageUrl: "data.png",
 		pricing: req.body.pricing
 	}

@@ -16,8 +16,11 @@ block contenido
 				tr
 					td= product.id
 					td= product.title
-					td= product.description
+					td= product.descripcion
 					td= product.pricing
-					td
-						a(href="#{product.imageUrl" class="btn") Ver Imagen
-					td Editar - Eliminar
+					td 
+						a(href="#{product.imageUrl}" class="btn") Ver Imagen
+					td 
+						a(href="/menu/edit/#{product.id}") Editar
+						=" - "
+						a(href="#") Eliminar
